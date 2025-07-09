@@ -1,8 +1,8 @@
 # Picotron-Lua-Libraries
 little libraries that i've written for myself in my time with picotron!
-feel free to use these as you please - credit is not required at all, but will make me smile a little.
+feel free to use these as you please - credit is not required at all, but will make me smile a little
 
-all of these are subject to change!
+all of these are subject to change, and are made for my own personal use first and foremost!! i am only sharing these just in case someone else will find them useful, too... thank you for understanding
 
 ## menu.lua
 allows you to create simple menus with `menu.new{}`. supports functionalities like:
