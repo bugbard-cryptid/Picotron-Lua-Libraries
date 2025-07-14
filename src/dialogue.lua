@@ -1,4 +1,4 @@
---[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-14 23:22:53",notes="a library to create dialogues by\nwriting the script in a table",revision=1279,title="dialogue.lua",version="v0.3"]]
+--[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-14 23:34:03",notes="a library to create dialogues by\nwriting the script in a table",revision=1293,title="dialogue.lua",version="v0.3"]]
 --[[
 	make a new dialogue something like this:
 		my_dialogue = dialogue.new{
@@ -26,7 +26,7 @@ local dialogue = {
 	line_prog 	= 0,	-- progress of current text line
 	script_prog = 1,	-- progress of entire script
 	tick 			= 0,	-- progress of current letter (depends on line spd)
-	sel			= 1,	-- which choice is selected, when choices are presented
+	sel			= 0,	-- which choice is selected, when choices are presented
 	
 	-- default values for entire dialogue
 	x 			= 0,		-- x position
@@ -111,9 +111,15 @@ function dialogue:update()
 				end
 			end
 		else
+			if current_line.choices then
+				if (keyp("up"))	self.sel -= 1	sfx(0)
+				if (keyp("down"))	self.sel += 1	sfx(0)
+				self.sel %= #current_line.choices
+			end
+			
 			if keyp("z") or current_line.fast then 
 				if current_line.choices then
-					current_line.choices[1].func(self)
+					current_line.choices[self.sel + 1].func(self)
 				end
 				self:advance(1)
 			end
@@ -189,8 +195,10 @@ function dialogue:draw()
 		print(current_line.prepend .. str .. current_line.append, self.x + 4,self.y + 4)
 		
 		if self.line_prog == #current_line.text and current_line.choices then
-			for c in all(current_line.choices) do
-				print("	"..c.text)
+			for i,c in ipairs(current_line.choices) do
+				local arrow = "	"
+				if (i == self.sel + 1) arrow = ">	"
+				print(arrow..c.text)
 			end
 		end
 		
