@@ -1,4 +1,5 @@
---[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-14 21:14:19",notes="a library to create dialogues by\nwriting the script in a table",revision=1235,title="dialogue.lua",version="v0.3"]]--[[
+--[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-14 21:25:58",notes="a library to create dialogues by\nwriting the script in a table",revision=1242,title="dialogue.lua",version="v0.3"]]
+--[[
 	make a new dialogue something like this:
 		my_dialogue = dialogue.new{
 			script = {
@@ -41,19 +42,18 @@ local dialogue = {
 local script_line = {
 	-- default values for script lines
 	text     = "placeholder! this line will disappear forever once read!",
-	spd      = 1,      -- speed text is advanced in frames
-	snd      = 0,      -- which sfx to play... make this false to play no sound
-	noskip   = false,  -- prevents X to skip
-	fast     = false,  -- advance dialogue automatically once end is reached
-	anim     = "none", -- valid anims: {"shaky", "wavy", "whirly"}
-	prepend  = "",     -- string to prepend to text
-	append   = ""      -- string to append to text
+	spd      = 1,			-- speed text is advanced in frames
+	snd      = 0,			-- which sfx to play... make this false to play no sound
+	snd_freq	= 1,			-- how often to play text beep sound as dialogue progresses
+	noskip   = false,		-- prevents X to skip
+	fast     = false,		-- advance dialogue automatically once end is reached
+	anim     = "none",	-- valid anims: {"shaky", "wavy", "whirly"}
+	prepend  = "",			-- string to prepend to text
+	append   = ""			-- string to append to text
 }
 script_line.__index = script_line
 
 dialogue.__index = dialogue
-
-local ofs = {"f","g","h"} -- used for shaking animation
 
 function dialogue.new(tbl)
 	local new = {}
@@ -102,7 +102,7 @@ function dialogue:update()
 					
 					-- play typing sound if character is not punctuation or space
 					if count({"!","?",",","."," "},char) == 0 then
-						if current_line.snd then sfx(current_line.snd) end
+						if (current_line.snd and self.line_prog % current_line.snd_freq == 0) sfx(current_line.snd)
 					else -- otherwise... slow down a little on punctuation
 						if char == "." or char == "?" or char == "!" then
 							self.tick = -current_line.spd * 10
@@ -124,6 +124,7 @@ function dialogue:update()
 end
 
 function dialogue:draw()
+	local ofs = {"f","g","h"} -- used for shaking animation
 	local current_line = self.script[self.script_prog]
 	if type(current_line) == "table" then
 		if self.box then
