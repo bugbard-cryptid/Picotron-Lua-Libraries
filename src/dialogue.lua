@@ -1,4 +1,4 @@
---[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-14 21:25:58",notes="a library to create dialogues by\nwriting the script in a table",revision=1242,title="dialogue.lua",version="v0.3"]]
+--[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-14 23:22:53",notes="a library to create dialogues by\nwriting the script in a table",revision=1279,title="dialogue.lua",version="v0.3"]]
 --[[
 	make a new dialogue something like this:
 		my_dialogue = dialogue.new{
@@ -14,21 +14,19 @@ local dialogue = {
 	script 		= {
 		{
 			text="placeholder!",
+			choices = nil,
 			spd = 1,
 			anim="wavy",
 			prepend = "~ ",
 			append = " ~"
-		},
-		{text="use prepend to..."},
-		{prepend="use prepend to...", text="make text pause for input!", anim="whirly"},
-		{prepend="use prepend to...make text pause for input!", text=" isnt that neat!"},
-		{text="i will probably figure out a good way to make it pause mid-line another time..."}
+		}
 	},
 	
 	-- values that arent meant to be directly touched
 	line_prog 	= 0,	-- progress of current text line
 	script_prog = 1,	-- progress of entire script
 	tick 			= 0,	-- progress of current letter (depends on line spd)
+	sel			= 1,	-- which choice is selected, when choices are presented
 	
 	-- default values for entire dialogue
 	x 			= 0,		-- x position
@@ -41,7 +39,7 @@ local dialogue = {
 
 local script_line = {
 	-- default values for script lines
-	text     = "placeholder! this line will disappear forever once read!",
+	text     = "empty line",
 	spd      = 1,			-- speed text is advanced in frames
 	snd      = 0,			-- which sfx to play... make this false to play no sound
 	snd_freq	= 1,			-- how often to play text beep sound as dialogue progresses
@@ -114,8 +112,10 @@ function dialogue:update()
 			end
 		else
 			if keyp("z") or current_line.fast then 
-				self.line_prog = 0
-				self.script_prog += 1
+				if current_line.choices then
+					current_line.choices[1].func(self)
+				end
+				self:advance(1)
 			end
 		end
 	elseif type(current_line) == "function" then
@@ -188,6 +188,12 @@ function dialogue:draw()
 		end
 		print(current_line.prepend .. str .. current_line.append, self.x + 4,self.y + 4)
 		
+		if self.line_prog == #current_line.text and current_line.choices then
+			for c in all(current_line.choices) do
+				print("	"..c.text)
+			end
+		end
+		
 		if self.advance and self.line_prog >= #current_line.text then
 			-- draw little arrow to indicate button press
 			local x = self.x + self.w - 14
@@ -197,6 +203,23 @@ function dialogue:draw()
 			line(x,y,x+5,y+5)
 			line(x+5,y+5,x+10,y)
 		end
+	end
+end
+
+function dialogue:advance(to, absolute)
+	self.sel			= 0
+	self.line_prog	= 0
+	if absolute then
+		self.script_prog = to
+	else
+		self.script_prog += to
+	end
+end
+
+function dialogue:add_lines(tbl)
+	for l in all(tbl) do
+		setmetatable(l, script_line)
+		add(self.script, l)
 	end
 end
 
