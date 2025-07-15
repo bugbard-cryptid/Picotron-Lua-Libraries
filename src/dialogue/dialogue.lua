@@ -1,5 +1,4 @@
---[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-15 00:07:39",notes="a library to create dialogues by\nwriting the script in a table",revision=1301,title="dialogue.lua",version="v0.3"]]
---[[
+--[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-15 01:06:10",notes="a library to create dialogues by\nwriting the script in a table.",revision=1322,title="dialogue.lua",version="v0.4"]]--[[
 	make a new dialogue something like this:
 		my_dialogue = dialogue.new{
 			script = {
@@ -8,6 +7,8 @@
 				{text = "enjoy!!!", anim="whirly"}
 			}
 		}
+		
+		...or include dialogue_script.lua and use that as a script instead!
 --]]
 
 local dialogue = {
@@ -25,7 +26,7 @@ local dialogue = {
 	w 			= 479,	-- box width
 	h 			= 69,		-- box height - this is 6 lines of text tall
 	box 		= true,	-- whether to draw dialogue box or not
-	advance 	= true	-- whether to draw button press indicator or not
+	indicate	= true	-- whether to draw button press indicator or not
 }
 
 local script_line = {
@@ -124,21 +125,25 @@ end
 function dialogue:draw()
 	local ofs = {"f","g","h"} -- used for shaking animation
 	local current_line = self.script[self.script_prog]
+	
+	-- draw background box
+	if self.box then
+		rectfill(
+			self.x,
+			self.y,
+			self.x + self.w,
+			self.y + self.h,
+		0)
+		rect(
+			self.x,
+			self.y,
+			self.x + self.w,
+			self.y + self.h,
+		7)
+	end
+	
+	-- draw current dialogue line
 	if type(current_line) == "table" then
-		if self.box then
-			rectfill(
-				self.x,
-				self.y,
-				self.x + self.w,
-				self.y + self.h,
-			0)
-			rect(
-				self.x,
-				self.y,
-				self.x + self.w,
-				self.y + self.h,
-			7)
-		end
 		-- print text
 		local str = sub(current_line.text, 1, self.line_prog)
 		if current_line.anim == "shaky" then
@@ -194,11 +199,12 @@ function dialogue:draw()
 			end
 		end
 		
-		if self.advance and self.line_prog >= #current_line.text then
-			-- draw little arrow to indicate button press
+		-- draw little arrow to indicate button press
+		if self.indicate and self.line_prog >= #current_line.text then
 			local x = self.x + self.w - 14
 			local y = self.y + self.h + ceil(sin(time())/2) - 10
 			
+			color(7)
 			line()
 			line(x,y,x+5,y+5)
 			line(x+5,y+5,x+10,y)
@@ -214,21 +220,30 @@ function dialogue:advance(to, absolute)
 		l = 0
 		repeat
 			l += 1
-		until self.script[l] == to
+		until self.script[l] == to or l > #self.script
 		self.script_prog = l
+		
+		--[[ eventually should refactor this to work like nonex proposed:
+		script = {
+			"scene1" = {
+				{text="glap"}
+				{text="glap"}
+				{text="glap"}
+			}
+			
+			"scene2" = {
+				{text="glop"}
+				{text="glop"}
+				{text="glop"}
+			}
+		}
+		]]
 	else
 		if absolute then
 			self.script_prog = to
 		else
 			self.script_prog += to
 		end
-	end
-end
-
-function dialogue:add_lines(tbl)
-	for l in all(tbl) do
-		setmetatable(l, script_line)
-		add(self.script, l)
 	end
 end
 
