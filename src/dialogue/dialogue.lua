@@ -1,10 +1,12 @@
---[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-15 05:18:10",notes="a library to create dialogues by\nwriting the script in a table.",revision=1334,title="dialogue.lua",version="v0.5"]]--[[
+--[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-15 21:40:25",notes="a library to create dialogues by\nwriting the script in a table.",revision=1343,title="dialogue.lua",version="v0.6"]]--[[
 	make a new dialogue something like this:
 		my_dialogue = dialogue.new{
 			script = {
-				{text = "this is a dialogue line!"},
-				{text = "for more details, see the parameters shown below..."}
-				{text = "enjoy!!!", anim="whirly"}
+				["intro"] = {
+					{text = "this is a dialogue line!"},
+					{text = "for more details, see the parameters shown below..."}
+					{text = "enjoy!!!", anim="whirly"}
+				}
 			}
 		}
 		
@@ -27,7 +29,8 @@ local dialogue = {
 	w 			= 479,	-- box width
 	h 			= 69,		-- box height - this is 6 lines of text tall
 	box 		= true,	-- whether to draw dialogue box or not
-	indicate	= true	-- whether to draw button press indicator or not
+	indicate	= true,	-- whether to draw button press indicator or not,
+	color		= 7
 }
 
 local script_line = {
@@ -97,7 +100,7 @@ function dialogue:update()
 					
 					-- play typing sound if character is not punctuation or space
 					if count({"!","?",",","."," "},char) == 0 then
-						if (current_line.snd and self.line_prog % current_line.snd_freq == 0) sfx(current_line.snd)
+						if (current_line.snd and (self.line_prog - 1) % current_line.snd_freq == 0) sfx(current_line.snd)
 					else -- otherwise... slow down a little on punctuation
 						if char == "." or char == "?" or char == "!" then
 							self.tick = -current_line.spd * 10
@@ -196,7 +199,7 @@ function dialogue:draw()
 				str ..= "\+"..ofs[#ofs-x+1]..ofs[#ofs-y+1]
 			end
 		end
-		print(current_line.prepend .. str .. current_line.append, self.x + 4,self.y + 4)
+		print(current_line.prepend .. str .. current_line.append, self.x + 4,self.y + 4, self.color)
 		
 		if self.line_prog == #current_line.text and current_line.choices then
 			for i,c in ipairs(current_line.choices) do
