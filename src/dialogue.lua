@@ -1,4 +1,4 @@
---[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-14 23:34:03",notes="a library to create dialogues by\nwriting the script in a table",revision=1293,title="dialogue.lua",version="v0.3"]]
+--[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-15 00:07:39",notes="a library to create dialogues by\nwriting the script in a table",revision=1301,title="dialogue.lua",version="v0.3"]]
 --[[
 	make a new dialogue something like this:
 		my_dialogue = dialogue.new{
@@ -11,16 +11,7 @@
 --]]
 
 local dialogue = {
-	script 		= {
-		{
-			text="placeholder!",
-			choices = nil,
-			spd = 1,
-			anim="wavy",
-			prepend = "~ ",
-			append = " ~"
-		}
-	},
+	script 		= {{}},
 	
 	-- values that arent meant to be directly touched
 	line_prog 	= 0,	-- progress of current text line
@@ -120,13 +111,14 @@ function dialogue:update()
 			if keyp("z") or current_line.fast then 
 				if current_line.choices then
 					current_line.choices[self.sel + 1].func(self)
+				else
+					self:advance(1)
 				end
-				self:advance(1)
 			end
 		end
 	elseif type(current_line) == "function" then
-		current_line()
-	end
+		current_line(self)
+	elseif type(current_line) == "string" then self:advance(1) end
 end
 
 function dialogue:draw()
@@ -217,10 +209,19 @@ end
 function dialogue:advance(to, absolute)
 	self.sel			= 0
 	self.line_prog	= 0
-	if absolute then
-		self.script_prog = to
+	
+	if type(to) == "string" then
+		l = 0
+		repeat
+			l += 1
+		until self.script[l] == to
+		self.script_prog = l
 	else
-		self.script_prog += to
+		if absolute then
+			self.script_prog = to
+		else
+			self.script_prog += to
+		end
 	end
 end
 
