@@ -1,4 +1,4 @@
---[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-15 01:06:10",notes="a library to create dialogues by\nwriting the script in a table.",revision=1322,title="dialogue.lua",version="v0.4"]]--[[
+--[[pod_format="raw",author="bugbard",created="2025-06-11 23:39:10",icon=userdata("u8",16,16,"00010101010101010101010000000000000107070707070707070601000000000001070707070d0d0d07060601000000000107070d070d070d070606060100000001070707070d0d0d07060606060100000107070707070707070707070701000001070707070707070707070707010000010707070707070707070707070100000107070707070707070707070701000001070d0d0d0d0d0d0d0d0d0d0701000001070d07070707070707070d0701000001070d070d0d0d070d0d070d0701000001070d07070707070707070d0701000001070d0d0d0d0d0d0d0d0d0d0701000001070707070707070707070707010000010101010101010101010101010100"),lowcol_icon=true,modified="2025-07-15 05:18:10",notes="a library to create dialogues by\nwriting the script in a table.",revision=1334,title="dialogue.lua",version="v0.5"]]--[[
 	make a new dialogue something like this:
 		my_dialogue = dialogue.new{
 			script = {
@@ -13,10 +13,11 @@
 
 local dialogue = {
 	script 		= {{}},
+	section		= nil, -- what section is currently being read. starts at script["intro"]
 	
 	-- values that arent meant to be directly touched
 	line_prog 	= 0,	-- progress of current text line
-	script_prog = 1,	-- progress of entire script
+	section_prog = 1,	-- progress of current section
 	tick 			= 0,	-- progress of current letter (depends on line spd)
 	sel			= 0,	-- which choice is selected, when choices are presented
 	
@@ -53,20 +54,24 @@ function dialogue.new(tbl)
 	
 	-- reset progress to start
 	new.line_prog = 0
-	new.script_prog = 1
+	new.section_prog = 1
 	
 	-- set default state for each line in the script
-	for l in all(new.script) do
-		if type(l) == "table" then
-			setmetatable(l,script_line)
+	for _,sect in pairs(new.script) do
+		for l in all(sect) do
+			if type(l) == "table" then
+				setmetatable(l,script_line)
+			end
 		end
 	end
+	
+	new.section = new.script.intro
 	
 	return new
 end
 
 function dialogue:update()
-	local current_line = self.script[self.script_prog]
+	local current_line = self.section[self.section_prog]
 	
 	if type(current_line) == "table" then		
 		-- type current dialogue line
@@ -111,7 +116,9 @@ function dialogue:update()
 			
 			if keyp("z") or current_line.fast then 
 				if current_line.choices then
-					current_line.choices[self.sel + 1].func(self)
+					local result = current_line.choices[self.sel + 1].result
+					if (type(result) == "function") result()
+					if (type(result) == "string") self:advance(result)
 				else
 					self:advance(1)
 				end
@@ -119,12 +126,12 @@ function dialogue:update()
 		end
 	elseif type(current_line) == "function" then
 		current_line(self)
-	elseif type(current_line) == "string" then self:advance(1) end
+	elseif type(current_line) == "string" then self:advance(current_line) end
 end
 
 function dialogue:draw()
 	local ofs = {"f","g","h"} -- used for shaking animation
-	local current_line = self.script[self.script_prog]
+	local current_line = self.section[self.section_prog]
 	
 	-- draw background box
 	if self.box then
@@ -212,38 +219,15 @@ function dialogue:draw()
 	end
 end
 
-function dialogue:advance(to, absolute)
+function dialogue:advance(to)
 	self.sel			= 0
 	self.line_prog	= 0
 	
 	if type(to) == "string" then
-		l = 0
-		repeat
-			l += 1
-		until self.script[l] == to or l > #self.script
-		self.script_prog = l
-		
-		--[[ eventually should refactor this to work like nonex proposed:
-		script = {
-			"scene1" = {
-				{text="glap"}
-				{text="glap"}
-				{text="glap"}
-			}
-			
-			"scene2" = {
-				{text="glop"}
-				{text="glop"}
-				{text="glop"}
-			}
-		}
-		]]
+		self.section_prog = 1
+		self.section = self.script[to]
 	else
-		if absolute then
-			self.script_prog = to
-		else
-			self.script_prog += to
-		end
+		self.section_prog += to
 	end
 end
 
